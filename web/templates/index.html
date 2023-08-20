@@ -1,23 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOU Chat</title>
-</head>
-<body>
-  <h1>NOU Chat</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NOU Chat</title>
+  </head>
+  <body>
+    <h1>NOU Chat</h1>
 
-  <div>
     <div>
-      <ul id="messages"></ul>
+      <div>
+        <ul id="messages"></ul>
+      </div>
+      <div>
+        <div>
+          <textarea
+            placeholder="Сообщение..."
+            type="text"
+            autocomplete="off"
+            id="message-input"
+            maxlength="512"
+          ></textarea>
+        </div>
+        <div>
+          <input
+            type="file"
+            id="uploader"
+            accept=".jpg,.png,.webp,.jpeg,.gif"
+          />
+          <button onclick="send(event)">Send</button>
+        </div>
+      </div>
     </div>
-    <div>
-      <input type="text" autocomplete="off" id="message-input" />
-      <button onclick="send(event)">Send</button>
-    </div>
-  </div>
 
-  <script src="/static/main.js"></script>
-</body>
+    <script src="/static/main.js"></script>
+  </body>
 </html>

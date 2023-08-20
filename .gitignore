@@ -213,3 +213,5 @@ artifacts/
 
 # Docker local volume
 .docker
+
+media/
