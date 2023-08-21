@@ -21,7 +21,8 @@ class Message(Base):
     text = Column(String, nullable=True)
     file = Column(String, nullable=True)
     mtype = Column(String, nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    username = Column(String)
     created_at = Column(DateTime)
 
     user = relationship("User", back_populates="messages")

@@ -2,7 +2,7 @@ from json import JSONDecodeError
 import json
 import os
 import shutil
-from typing import Dict
+from typing import Dict, Tuple
 from fastapi import (
     Cookie,
     Depends,
@@ -19,39 +19,14 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from uuid import uuid4
-import time
+from connection_manager import cm
 from pathlib import Path
+from bots import BOTS
 from crud import create_message, create_user, get_last_messages, get_user_by_name
 from models import Base, User
 from database import SessionLocal, engine
 from utils import verify_pwd
 from sqlalchemy.orm import Session
-
-
-def now_ts():
-    return int(time.time() * 1000)
-
-
-class ConnectionManager:
-    def __init__(self) -> None:
-        self.connections: Dict[WebSocket, User] = {}
-
-    @property
-    def users(self):
-        return list({user.name for user in self.connections.values()})
-
-    async def connect(self, ws: WebSocket, user: User):
-        await ws.accept()
-        self.connections[ws] = user
-
-    def disconnect(self, ws: WebSocket):
-        self.connections.pop(ws)
-
-    async def broadcast(self, msg: Dict[str, any]):
-        msg["ts"] = now_ts()
-        msg["mid"] = str(uuid4())
-        for ws in self.connections:
-            await ws.send_json(msg)
 
 
 MEDIA_DIR = Path("media")
@@ -71,19 +46,34 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 templates = Jinja2Templates("templates")
-cm = ConnectionManager()
 
 CHAT_BOT = "ChatBot"
 
 
-async def handle_chat_message(db: Session, data: Dict, user: User):
+async def handle_mention(
+    db: Session, ws: WebSocket, username: str, mention: str, text: str
+):
+    print(f"User {username} mentioned {mention} with {text}")
+    bot = BOTS.get(mention)
+    if bot is not None:
+        await bot(db, ws, username, text)
+
+
+def find_mentionee(txt: str) -> Tuple[str | None, str]:
+    idx = txt.find(" ")
+    if idx < 0:
+        return txt, None
+    return txt[:idx], txt[idx + 1 :]
+
+
+async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User):
     if data["type"] == "message":
-        txt = data["text"]
+        txt: str = data["text"]
         if len(txt) > 512:
             print(f"Mesage from {user.name} too long. Ignoring...")
             return
         print(f"{user.name}> ", txt)
-        create_message(db, user, text=txt)
+        create_message(db, user.name, user_id=user.id, text=txt)
         await cm.broadcast(
             {
                 "type": "message",
@@ -91,6 +81,9 @@ async def handle_chat_message(db: Session, data: Dict, user: User):
                 "text": txt,
             }
         )
+        if txt[0] == "@":
+            mention, txt = find_mentionee(txt)
+            await handle_mention(db, ws, user.name, mention, txt)
     else:
         print(f"[WARN] unknown message type from user {user.name}", data)
 
@@ -99,7 +92,7 @@ async def send_last_messages(db: Session, ws: WebSocket):
     last_mesages = get_last_messages(db)
     for msg in last_mesages:
         data = {
-            "from": msg.user.name,
+            "from": msg.username,
             "type": "message",
             "text": msg.text,
         }
@@ -144,7 +137,7 @@ async def ws_endpoint(
             try:
                 txt = await ws.receive_text()
                 data = json.loads(txt)
-                await handle_chat_message(db, data, user)
+                await handle_chat_message(ws, db, data, user)
             except JSONDecodeError:
                 print(f'[ERROR] failed to parse json "{txt}"')
     except WebSocketDisconnect:
@@ -234,7 +227,7 @@ async def create_upload_files(
     content_type = file.content_type.split("/")[0]
 
     path = f"/media/{fid}"
-    create_message(db, user, file=path, ftype=content_type)
+    create_message(db, user.name, user_id=user.id, file=path, ftype=content_type)
     await cm.broadcast(
         {
             "from": username,

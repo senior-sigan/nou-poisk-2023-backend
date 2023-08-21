@@ -27,16 +27,19 @@ def create_user(db: Session, name: str, password: str):
 
 def create_message(
     db: Session,
-    user: User,
+    username: str,
     *,
+    user_id: Optional[int] = None,
     text: Optional[str] = None,
     file: Optional[str] = None,
     ftype: Optional[str] = None,
 ):
     msg = Message(
-        user_id=user.id,
+        username=username,
         created_at=datetime.datetime.now(),
     )
+    if user_id is not None:
+        msg.user_id = user_id
     if text is not None:
         msg.text = text
     if file is not None:
