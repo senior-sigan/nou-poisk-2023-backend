@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>voice</title>
+    <style>
+        #start_recording{
+            border:none;
+            width: 64px;
+            height: 64px;
+            font-size: 60px;
+            border-radius: 40px;
+            background: #79db7d;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="startRecord(event)" id="start_recording" >
+       🎙
+    </button>
+    
+    <div id="audio_box"></div>
+
+    <script src="voice.js"></script>
+</body>
+</html>
