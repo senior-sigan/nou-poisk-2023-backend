@@ -11,9 +11,12 @@ const usersList = document.getElementById("users_list");
 const messages = document.getElementById("messages");
 let me = "";
 
+ws.onopen = (event) => {
+  console.log("Connected");
+};
+
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
-  console.log(data);
 
   if (data.from === "ChatBot" && data.type === "me") {
     me = data.me;
@@ -24,6 +27,11 @@ ws.onmessage = (event) => {
   } else {
     console.warn("Unknown message type", data);
   }
+};
+
+ws.onclose = (event) => {
+  console.log("Connection closed");
+  input.setAttribute("disabled", "");
 };
 
 function send(event) {
