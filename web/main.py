@@ -175,8 +175,11 @@ async def create_upload_files(
     with new_file.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    content_type = file.content_type.split('/')[0]
+
     await cm.broadcast({
         "from": username,
-        "image": f"/media/{fid}",
+        "content_type": content_type,
+        "file": f"/media/{fid}",
     })
-    return {"filename": f"/media/{fid}"}
+    return {"file": f"/media/{fid}", "content_type": content_type}

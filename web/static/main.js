@@ -19,15 +19,44 @@ ws.onmessage = (event) => {
   if (data.text) {
     li.textContent = `FROM: ${data.from} > ${data.text}`;
   }
-  if (data.image) {
+  if (data.content_type === 'image') {
     const img = document.createElement('img');
-    img.src = data.image;
+    img.src = data.file;
     img.style = "width: 400px";
     const p = document.createElement('p');
     p.textContent =  `FROM: ${data.from}`;
     li.appendChild(p);
     li.appendChild(img);
+  } else if (data.content_type === 'video') {
+    const video = document.createElement('video');
+    video.src = data.file; 
+    video.style = "width: 400px";
+    video.controls = true;
+    video.muted = true;
+    const p = document.createElement('p');
+    p.textContent = `FROM: ${data.from}`;
+    li.appendChild(p);
+    li.appendChild(video);
+  } else if (data.content_type === 'audio') {
+    const audio = document.createElement('audio');
+    audio.src = data.file;
+    audio.controls = true;
+    const p = document.createElement('p');
+    p.textContent = `FROM: ${data.from}`;
+    li.appendChild(p);
+    li.appendChild(audio);
+  } else if (data.content_type) {
+    const link = document.createElement('a');
+    link.textContent = data.file;
+    link.href = data.file;
+    link.target = '_blank';
+    const p = document.createElement('p');
+    p.textContent = `FROM: ${data.from}`;
+    li.appendChild(p);
+    li.appendChild(link);
   }
+
+
   messages.appendChild(li);
 }
 
