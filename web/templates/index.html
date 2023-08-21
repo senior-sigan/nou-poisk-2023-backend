@@ -4,30 +4,36 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NOU Chat</title>
+    <link rel="stylesheet" href="/static/index.css" />
   </head>
   <body>
     <h1>NOU Chat</h1>
 
-    <div>
-      <div>
+    <div class="users-list-container">
+      <h3>Users</h3>
+      <ul id="users_list"></ul>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-mesages">
         <ul id="messages"></ul>
       </div>
-      <div>
-        <div>
-          <textarea
-            placeholder="Сообщение..."
-            type="text"
-            autocomplete="off"
-            id="message-input"
-            maxlength="512"
-          ></textarea>
-        </div>
-        <div>
-          <input
-            type="file"
-            id="uploader"
-          />
-          <button onclick="send(event)">Send</button>
+
+      <div class="chat-input-container">
+        <div class="chat-input">
+          <div>
+            <textarea
+              placeholder="Сообщение..."
+              type="text"
+              autocomplete="off"
+              id="message-input"
+              maxlength="512"
+            ></textarea>
+          </div>
+          <div>
+            <input type="file" id="uploader" />
+            <button onclick="send(event)">Send</button>
+          </div>
         </div>
       </div>
     </div>

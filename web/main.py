@@ -78,6 +78,11 @@ async def ws_endpoint(
 
     await cm.connect(ws, user)
     try:
+        await ws.send_json({
+            "from": CHAT_BOT,
+            "type": "me",
+            "me": username,
+        })
         await cm.broadcast(
             {
                 "from": CHAT_BOT,
@@ -92,6 +97,7 @@ async def ws_endpoint(
                 continue
             print(f"{username}> ", txt)
             await cm.broadcast({
+                "type": "message",
                 "from": username,
                 "text": txt,
             })

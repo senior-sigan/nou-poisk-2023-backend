@@ -1,0 +1,29 @@
+.users-list-container {
+    position: fixed;
+    right: 16px;
+}
+
+.chat-input-container {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: white;
+}
+
+.chat-input {
+    margin-left: 16px;
+    margin-bottom: 24px;
+    margin-right: 16px;
+}
+
+.chat-input textarea {
+    width: 70%;
+}
+
+.chat-mesages {
+    overflow-wrap: break-word;
+}
+
+.chat-container {
+    max-width: 70%;
+}
