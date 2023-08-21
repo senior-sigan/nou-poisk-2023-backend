@@ -1,7 +1,8 @@
 # CRUD = create, read, update, delete
+from typing import Optional, List
 from sqlalchemy.orm import Session
 
-from models import User
+from models import User, Message
 import datetime
 
 from utils import hash_pwd
@@ -22,3 +23,30 @@ def create_user(db: Session, name: str, password: str):
     db.commit()
     db.refresh(user)
     return user
+
+
+def create_message(
+    db: Session,
+    user: User,
+    *,
+    text: Optional[str] = None,
+    file: Optional[str] = None,
+    ftype: Optional[str] = None,
+):
+    msg = Message(
+        user_id=user.id,
+        created_at=datetime.datetime.now(),
+    )
+    if text is not None:
+        msg.text = text
+    if file is not None:
+        msg.file = file
+        msg.mtype = ftype
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    return msg
+
+
+def get_last_messages(db: Session) -> List[Message]:
+    return db.query(Message).limit(1000).all()

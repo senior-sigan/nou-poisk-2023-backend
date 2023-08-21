@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from uuid import uuid4
 import time
 from pathlib import Path
-from crud import create_user, get_user_by_name
+from crud import create_message, create_user, get_last_messages, get_user_by_name
 from models import Base, User
 from database import SessionLocal, engine
 from utils import verify_pwd
@@ -76,12 +76,14 @@ cm = ConnectionManager()
 CHAT_BOT = "ChatBot"
 
 
-async def handle_data(data, user):
+async def handle_chat_message(db: Session, data: Dict, user: User):
     if data["type"] == "message":
         txt = data["text"]
         if len(txt) > 512:
+            print(f"Mesage from {user.name} too long. Ignoring...")
             return
         print(f"{user.name}> ", txt)
+        create_message(db, user, text=txt)
         await cm.broadcast(
             {
                 "type": "message",
@@ -91,6 +93,22 @@ async def handle_data(data, user):
         )
     else:
         print(f"[WARN] unknown message type from user {user.name}", data)
+
+
+async def send_last_messages(db: Session, ws: WebSocket):
+    last_mesages = get_last_messages(db)
+    for msg in last_mesages:
+        data = {
+            "from": msg.user.name,
+            "type": "message",
+            "text": msg.text,
+        }
+        if msg.file is not None:
+            data["file"] = {
+                "content_type": msg.mtype,
+                "path": msg.file,
+            }
+        await ws.send_json(data)
 
 
 @app.websocket("/ws")
@@ -121,11 +139,12 @@ async def ws_endpoint(
                 "text": f"Client connected {username}",
             }
         )
+        await send_last_messages(db, ws)
         while True:
             try:
                 txt = await ws.receive_text()
                 data = json.loads(txt)
-                await handle_data(data, user)
+                await handle_chat_message(db, data, user)
             except JSONDecodeError:
                 print(f'[ERROR] failed to parse json "{txt}"')
     except WebSocketDisconnect:
@@ -214,13 +233,15 @@ async def create_upload_files(
 
     content_type = file.content_type.split("/")[0]
 
+    path = f"/media/{fid}"
+    create_message(db, user, file=path, ftype=content_type)
     await cm.broadcast(
         {
             "from": username,
             "type": "message",
             "file": {
                 "content_type": content_type,
-                "path": f"/media/{fid}",
+                "path": path,
             },
         }
     )

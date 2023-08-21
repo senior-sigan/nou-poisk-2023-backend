@@ -1,4 +1,5 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy.orm import relationship
 from database import Base
 
 
@@ -10,6 +11,8 @@ class User(Base):
     password = Column(String)
     created_at = Column(DateTime)
 
+    messages = relationship("Message", back_populates="user")
+
 
 class Message(Base):
     __tablename__ = "messages"
@@ -20,3 +23,5 @@ class Message(Base):
     mtype = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime)
+
+    user = relationship("User", back_populates="messages")
