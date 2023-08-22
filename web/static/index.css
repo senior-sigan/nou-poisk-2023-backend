@@ -1,11 +1,18 @@
 .users-list-container {
+  width: 14%;
+  height: 75vh;
+  padding: visible;
+  padding-top: 0;
+  background-color: #e6ddf6a1;
   position: fixed;
-  right: 16px;
+  right: 0;
+  border: 5px solid darkblue;
+  overflow: scroll;
 }
 
 .chat-input-container {
-  /* position: fixed;
-    bottom: 0; */
+  position: fixed;
+  bottom: 0;
   width: 100%;
   background: white;
 }
@@ -25,5 +32,13 @@
 }
 
 .chat-container {
-  max-width: 70%;
+  background-color: #e6ddf6a1;
+  border: 5px solid darkblue;
+  width: 85%;
+  height: 75vh;
+  overflow: scroll;
+}
+
+.user-typing-icon {
+  width: 32px;
 }

@@ -1,15 +1,41 @@
+let me = "";
+const users = new Map();
+
+let canSendIsTyping = true;
+
 const input = document.getElementById("message-input");
 input.addEventListener("keypress", (event) => {
   if (event.key === "Enter") {
     send(event);
+  } else {
+    if (canSendIsTyping) {
+      console.log("BUUUM");
+      ws.send(
+        JSON.stringify({
+          type: "typing",
+        })
+      );
+      canSendIsTyping = false;
+      setTimeout(() => {
+        canSendIsTyping = true;
+      }, 200);
+    }
   }
 });
+const fileInput = document.getElementById("uploader");
+const clearBtn = document.getElementById("clear-btn");
+clearBtn.addEventListener("click", clearInputs);
+
+// DUMMY scroll
+setTimeout(() => {
+  const scroller = document.getElementById("scroller");
+  scroller.scrollTo(0, scroller.scrollHeight);
+}, 200);
 
 const host = window.location.host;
 const ws = new WebSocket(`ws://${host}/ws`);
 const usersList = document.getElementById("users_list");
 const messages = document.getElementById("messages");
-let me = "";
 
 ws.onopen = (event) => {
   console.log("Connected");
@@ -24,6 +50,8 @@ ws.onmessage = (event) => {
     handleUsersList(data);
   } else if (data.type === "message") {
     handleChatMessage(data);
+  } else if (data.type === "typing") {
+    activity_user(data);
   } else {
     console.warn("Unknown message type", data);
   }
@@ -50,7 +78,6 @@ function send(event) {
 }
 
 function sendFile() {
-  const fileInput = document.getElementById("uploader"); // получаем элемент input для загрузки файла
   const file = fileInput.files[0]; // получаем выбранный файл
   if (!file) return;
   const xhr = new XMLHttpRequest(); // создаем объект XMLHttpRequest
@@ -101,18 +128,48 @@ function handleChatMessage(data) {
   messages.appendChild(li);
 }
 
+function activity_user(data) {
+  const u = users.get(data.user);
+  u.el.setAttribute("style", "opacity:100%;");
+  clearTimeout(u.timeout);
+  u.timeout = setTimeout(() => {
+    u.el.setAttribute("style", "opacity:0%;");
+  }, 3000);
+}
+
 function handleUsersList(data) {
   while (usersList.firstChild) {
     usersList.removeChild(usersList.firstChild);
   }
 
   data.users.sort();
+  users.clear();
 
   for (const user of data.users) {
     const li = document.createElement("li");
-    li.textContent = `${user}`;
+    li.textContent = `${user.name}`;
+    const img = document.createElement("img");
+    img.src = "/static/pen.png";
+    img.className = "user-typing-icon";
+    img.setAttribute("style", "opacity: 0%;");
+    li.appendChild(img);
+    if (user.isOnline === true) {
+      li.setAttribute("style", "color: green;");
+    } else {
+      li.setAttribute("style", "color: red;");
+    }
     usersList.appendChild(li);
+    users.set(user, {
+      el: img,
+      timeout: null,
+      isOnline: user.isOnline === true,
+    });
   }
 
   return;
+}
+
+function clearInputs(event) {
+  input.value = "";
+  fileInput.value = "";
 }

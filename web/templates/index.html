@@ -14,7 +14,7 @@
       <ul id="users_list"></ul>
     </div>
 
-    <div class="chat-container">
+    <div class="chat-container" id="scroller">
       <div class="chat-mesages">
         <ul id="messages"></ul>
       </div>
@@ -32,7 +32,8 @@
           </div>
           <div>
             <input type="file" id="uploader" />
-            <button onclick="send(event)">Send</button>
+            <button type="button" id="clear-btn">Clear</button>
+            <button type="button" onclick="send(event)">Send</button>
           </div>
         </div>
       </div>

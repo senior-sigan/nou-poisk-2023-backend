@@ -22,7 +22,7 @@ from uuid import uuid4
 from connection_manager import cm
 from pathlib import Path
 from bots import BOTS
-from crud import create_message, create_user, get_last_messages, get_user_by_name
+from crud import create_message, create_user, get_all_users, get_last_messages, get_user_by_name
 from models import Base, User
 from database import SessionLocal, engine
 from utils import verify_pwd
@@ -57,20 +57,33 @@ async def handle_mention(
     bot = BOTS.get(mention)
     if bot is not None:
         await bot(db, ws, username, text)
+    else:
+        print(f'[WARN] unknown bot "{mention}" txt={text}')
+
+
+def online_users(db: Session):
+    online_users = set(cm.users)
+    allusers = [
+        {'name': user.name, 'isOnline': user.name in online_users}
+        for user in get_all_users(db)
+    ]
+    allusers.sort(key=lambda a: a['name'])
+    allusers.sort(key=lambda a: a['isOnline'], reverse=True)
+    return allusers
 
 
 def find_mentionee(txt: str) -> Tuple[str | None, str]:
     idx = txt.find(" ")
     if idx < 0:
         return txt, None
-    return txt[:idx], txt[idx + 1 :]
+    return txt[:idx], txt[idx + 1:]
 
 
 async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User):
     if data["type"] == "message":
         txt: str = data["text"]
         if len(txt) > 512:
-            print(f"Mesage from {user.name} too long. Ignoring...")
+            print(f"Message from {user.name} too long. Ignoring...")
             return
         print(f"{user.name}> ", txt)
         create_message(db, user.name, user_id=user.id, text=txt)
@@ -84,6 +97,14 @@ async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User
         if txt[0] == "@":
             mention, txt = find_mentionee(txt)
             await handle_mention(db, ws, user.name, mention, txt)
+    elif data["type"] == "typing":
+        await cm.broadcast(
+            {
+                "type": "typing",
+                "from": CHAT_BOT,
+                "user": user.name,
+            }
+        )
     else:
         print(f"[WARN] unknown message type from user {user.name}", data)
 
@@ -128,7 +149,7 @@ async def ws_endpoint(
             {
                 "from": CHAT_BOT,
                 "type": "users_list",
-                "users": cm.users,
+                "users": online_users(db),
                 "text": f"Client connected {username}",
             }
         )
@@ -227,7 +248,8 @@ async def create_upload_files(
     content_type = file.content_type.split("/")[0]
 
     path = f"/media/{fid}"
-    create_message(db, user.name, user_id=user.id, file=path, ftype=content_type)
+    create_message(db, user.name, user_id=user.id,
+                   file=path, ftype=content_type)
     await cm.broadcast(
         {
             "from": username,
