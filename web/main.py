@@ -22,7 +22,13 @@ from uuid import uuid4
 from connection_manager import cm
 from pathlib import Path
 from bots import BOTS
-from crud import create_message, create_user, get_all_users, get_last_messages, get_user_by_name
+from crud import (
+    create_message,
+    create_user,
+    get_all_users,
+    get_last_messages,
+    get_user_by_name,
+)
 from models import Base, User
 from database import SessionLocal, engine
 from utils import verify_pwd
@@ -64,11 +70,11 @@ async def handle_mention(
 def online_users(db: Session):
     online_users = set(cm.users)
     allusers = [
-        {'name': user.name, 'isOnline': user.name in online_users}
+        {"name": user.name, "isOnline": user.name in online_users}
         for user in get_all_users(db)
     ]
-    allusers.sort(key=lambda a: a['name'])
-    allusers.sort(key=lambda a: a['isOnline'], reverse=True)
+    allusers.sort(key=lambda a: a["name"])
+    allusers.sort(key=lambda a: a["isOnline"], reverse=True)
     return allusers
 
 
@@ -76,7 +82,7 @@ def find_mentionee(txt: str) -> Tuple[str | None, str]:
     idx = txt.find(" ")
     if idx < 0:
         return txt, None
-    return txt[:idx], txt[idx + 1:]
+    return txt[:idx], txt[idx + 1 :]
 
 
 async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User):
@@ -248,8 +254,7 @@ async def create_upload_files(
     content_type = file.content_type.split("/")[0]
 
     path = f"/media/{fid}"
-    create_message(db, user.name, user_id=user.id,
-                   file=path, ftype=content_type)
+    create_message(db, user.name, user_id=user.id, file=path, ftype=content_type)
     await cm.broadcast(
         {
             "from": username,

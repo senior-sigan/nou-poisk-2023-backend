@@ -11,8 +11,10 @@ from utils import hash_pwd
 def get_user_by_name(db: Session, name: str) -> User | None:
     return db.query(User).filter(User.name == name).first()
 
-def get_all_users(db:Session) -> List[User]:
+
+def get_all_users(db: Session) -> List[User]:
     return db.query(User).all()
+
 
 def create_user(db: Session, name: str, password: str):
     hashed_password = hash_pwd(password)

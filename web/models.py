@@ -23,6 +23,7 @@ class Message(Base):
     mtype = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     username = Column(String)
+    to = Column(String, nullable=True)
     created_at = Column(DateTime)
 
     user = relationship("User", back_populates="messages")

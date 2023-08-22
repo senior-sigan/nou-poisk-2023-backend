@@ -1,4 +1,5 @@
 import random
+from typing import Tuple
 from fastapi import WebSocket
 from connection_manager import cm
 from crud import create_message
@@ -17,16 +18,19 @@ async def ping_bot(db: Session, ws: WebSocket, username: str, text: str):
     )
 
 
+def dice_parse(text: str | None) -> Tuple[int, int]:
+    if text is None or len(text) == 0:
+        return 1, 6
+    parts = text.split(" ")
+    if len(parts) == 0:
+        return 1, int(parts[0])
+    return int(parts[0]), int(parts[1])
+
+
 async def dice_bot(db: Session, ws: WebSocket, username: str, message: str):
     try:
-        if message is None:
-            text = str(random.randint(1, 6))
-        elif len(message.split()) == 1:
-            nums = [1, int(message)]
-            text = str(random.randint(min(nums), max(nums)))
-        else:
-            nums = [int(message.split()[0]), int(message.split()[1])]
-            text = str(random.randint(min(nums), max(nums)))
+        nums = dice_parse(message)
+        text = str(random.randint(min(nums), max(nums)))
     except ValueError:
         text = "Пишите @dice или @dice 10 или @dice 2 20"
     create_message(db, "DiceBot", text=text)
