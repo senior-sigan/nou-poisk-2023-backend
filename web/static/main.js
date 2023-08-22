@@ -9,7 +9,6 @@ input.addEventListener("keypress", (event) => {
     send(event);
   } else {
     if (canSendIsTyping) {
-      console.log("BUUUM");
       ws.send(
         JSON.stringify({
           type: "typing",
@@ -27,10 +26,10 @@ const clearBtn = document.getElementById("clear-btn");
 clearBtn.addEventListener("click", clearInputs);
 
 // DUMMY scroll
-setTimeout(() => {
-  const scroller = document.getElementById("scroller");
-  scroller.scrollTo(0, scroller.scrollHeight);
-}, 200);
+// setTimeout(() => {
+//   const scroller = document.getElementById("scroller");
+//   scroller.scrollTo(0, scroller.scrollHeight);
+// }, 200);
 
 const host = window.location.host;
 const ws = new WebSocket(`ws://${host}/ws`);
@@ -125,7 +124,13 @@ function handleChatMessage(data) {
     if (file) li.appendChild(file);
   }
 
+  let shouldScroll = isAtBottom();
+  
   messages.appendChild(li);
+
+  if (shouldScroll) {
+    scrollDown();
+  }
 }
 
 function activity_user(data) {
@@ -159,7 +164,7 @@ function handleUsersList(data) {
       li.setAttribute("style", "color: red;");
     }
     usersList.appendChild(li);
-    users.set(user, {
+    users.set(user.name, {
       el: img,
       timeout: null,
       isOnline: user.isOnline === true,
@@ -173,3 +178,22 @@ function clearInputs(event) {
   input.value = "";
   fileInput.value = "";
 }
+
+function isAtBottom() {
+  let block = document.getElementById("scroller");
+  return block.scrollHeight - block.scrollTop - block.clientHeight < 20;
+}
+
+function scrollDown() {
+  let block = document.getElementById("scroller");
+  block.scrollTop = block.scrollHeight;
+}
+
+// function scrollcheck() {
+//   let block = document.getElementById("scroller");
+//   const h = block.clientHeight;
+//   // debugger
+//   if (block.scrollTop >= block.scrollHeight - h) {
+//     block.scrollTop = block.scrollHeight;
+//   }
+// }
