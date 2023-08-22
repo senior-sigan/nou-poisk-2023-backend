@@ -37,18 +37,17 @@ def create_message(
     text: Optional[str] = None,
     file: Optional[str] = None,
     ftype: Optional[str] = None,
+    to: Optional[str] = None,
 ):
     msg = Message(
         username=username,
         created_at=datetime.datetime.now(),
+        to=to,
+        user_id=user_id,
+        text=text,
+        file=file,
+        mtype=ftype,
     )
-    if user_id is not None:
-        msg.user_id = user_id
-    if text is not None:
-        msg.text = text
-    if file is not None:
-        msg.file = file
-        msg.mtype = ftype
     db.add(msg)
     db.commit()
     db.refresh(msg)
