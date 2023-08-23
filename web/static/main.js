@@ -105,7 +105,6 @@ function createFileTag(file) {
     video.src = file.path;
     video.style = "width: 400px";
     video.controls = true;
-    video.muted = true;
     return video;
   } else if (file.content_type === "audio") {
     const audio = document.createElement("audio");

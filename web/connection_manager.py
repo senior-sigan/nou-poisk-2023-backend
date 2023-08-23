@@ -23,12 +23,12 @@ class ConnectionManager:
         self.connections.pop(ws)
 
     async def broadcast(self, msg: Dict[str, any]):
-        if msg.get('ts') is None:
+        if msg.get("ts") is None:
             msg["ts"] = now_ts()
         msg["mid"] = str(uuid4())
-        
-        to = msg.get('to')
-        from_ = msg.get('from')
+
+        to = msg.get("to")
+        from_ = msg.get("from")
         for ws, user in self.connections.items():
             if to is None or user.name == to or user.name == from_:
                 await ws.send_json(msg)

@@ -1,0 +1,21 @@
+:8000 {
+	handle {
+		reverse_proxy localhost:8001
+	}
+
+	handle_path /static/* {
+		root * static
+		file_server
+	}
+
+	handle_path /media/* {
+		root * media
+		file_server
+	}
+
+	encode gzip
+
+	log {
+		output stdout
+	}
+}

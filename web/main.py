@@ -127,8 +127,8 @@ async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User
                 "user": user.name,
             }
         )
-    elif data["type"] == 'likes' and data.get('message_id') is not None:
-        msg = like_message(db, data['message_id'])
+    elif data["type"] == "likes" and data.get("message_id") is not None:
+        msg = like_message(db, data["message_id"])
         await cm.broadcast(
             {
                 "type": "reaction",
