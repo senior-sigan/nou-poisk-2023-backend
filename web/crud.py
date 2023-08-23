@@ -47,6 +47,7 @@ def create_message(
         text=text,
         file=file,
         mtype=ftype,
+        reaction=0,
     )
     db.add(msg)
     db.commit()
@@ -56,3 +57,15 @@ def create_message(
 
 def get_last_messages(db: Session) -> List[Message]:
     return db.query(Message).limit(1000).all()
+
+
+def like_message(db:Session, message_id):
+    try:
+        msg = db.query(Message).filter(Message.id == message_id).one()
+        msg.reaction += 1   
+    except Exception:
+        print(f'[ERROR] failed to like message {message_id}')
+        db.rollback()
+        return None
+    db.commit()
+    return msg

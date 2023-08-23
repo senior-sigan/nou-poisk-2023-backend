@@ -1,5 +1,6 @@
 let me = "";
 const users = new Map();
+const likesMap = new Map();
 
 let canSendIsTyping = true;
 
@@ -55,6 +56,8 @@ ws.onmessage = (event) => {
     }
   } else if (data.type === "typing") {
     activity_user(data);
+  } else if (data.type === "reaction" && data.from == "ChatBot") {
+    handleLike(data);
   } else {
     console.warn("Unknown message type", data);
   }
@@ -120,7 +123,7 @@ function createFileTag(file) {
 
 function appendMessageWithScroll(li) {
   let shouldScroll = isAtBottom();
-  
+
   messages.appendChild(li);
 
   if (shouldScroll) {
@@ -129,21 +132,52 @@ function appendMessageWithScroll(li) {
 }
 
 function formatTime(time) {
-  if (!time) return '';
+  if (!time) return "";
 
-  const d =  new Date(time);
-  return d.toLocaleTimeString('ru-Ru', {hour: "numeric", minute: "numeric"});
+  const d = new Date(time);
+  return d.toLocaleTimeString("ru-Ru", { hour: "numeric", minute: "numeric" });
 }
 
 function handleChatMessage(data) {
   const li = document.createElement("li");
+  li.className = 'message-box';
+  const text = document.createElement("p");
+  const but = document.createElement("button");
+  const likeCounter = document.createElement("p");
+
+  const isBot = data.from[0] === "@";
+
   if (data.text) {
-    li.textContent = `${formatTime(data.ts)} (${data.from}): ${data.text}`;
+    text.textContent = `${formatTime(data.ts)} (${data.from}): ${data.text}`;
+
+    if (!isBot) {
+      likesMap.set(data.message_id, likeCounter);
+      if (data.reaction > 0) {
+        likeCounter.textContent = `(${data.reaction}) `;
+      }
+      but.textContent = "👍";
+      but.addEventListener("click", (ev) => {
+        ws.send(
+          JSON.stringify({
+            type: "likes",
+            message_id: data.message_id,
+          })
+        );
+      });
+
+      li.appendChild(but);
+      li.appendChild(likeCounter);
+    }
   }
   if (data.file) {
     const file = createFileTag(data.file);
     if (file) li.appendChild(file);
   }
+  if (isBot) {
+    li.setAttribute("style", "color: #3d57ff; background: #f0f0f0;");
+  }
+
+  li.appendChild(text);
 
   appendMessageWithScroll(li);
 }
@@ -151,13 +185,14 @@ function handleChatMessage(data) {
 function handleChatPrivateMessage(data) {
   const li = document.createElement("li");
   if (data.text) {
-    li.textContent = `${formatTime(data.ts)} (${data.from}:${data.to}) > ${data.text}`;
+    li.textContent = `${formatTime(data.ts)} (${data.from}:${data.to}) > ${
+      data.text
+    }`;
     li.className = "private-message";
   }
 
   appendMessageWithScroll(li);
 }
-
 
 function activity_user(data) {
   const u = users.get(data.user);
@@ -215,11 +250,11 @@ function scrollDown() {
   block.scrollTop = block.scrollHeight;
 }
 
-// function scrollcheck() {
-//   let block = document.getElementById("scroller");
-//   const h = block.clientHeight;
-//   // debugger
-//   if (block.scrollTop >= block.scrollHeight - h) {
-//     block.scrollTop = block.scrollHeight;
-//   }
-// }
+function handleLike(data) {
+  if (data.reaction > 0 && data.from == "ChatBot") {
+    const likeCounter = likesMap.get(data.message_id);
+    if (likeCounter) {
+      likeCounter.textContent = `(${data.reaction}) `;
+    }
+  }
+}

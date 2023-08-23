@@ -29,6 +29,7 @@ from crud import (
     get_all_users,
     get_last_messages,
     get_user_by_name,
+    like_message,
 )
 from models import Base, User
 from database import SessionLocal, engine
@@ -105,13 +106,15 @@ async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User
                 to = mention
                 mention = None
                 txt = txt_bot
-        create_message(db, user.name, user_id=user.id, text=txt, to=to)
+        msg = create_message(db, user.name, user_id=user.id, text=txt, to=to)
         await cm.broadcast(
             {
                 "type": "message",
                 "from": user.name,
                 "text": txt,
                 "to": to,
+                "reaction": msg.reaction,
+                "message_id": msg.id,
             }
         )
         if mention is not None:
@@ -121,6 +124,17 @@ async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User
             {
                 "type": "typing",
                 "from": CHAT_BOT,
+                "user": user.name,
+            }
+        )
+    elif data["type"] == 'likes' and data.get('message_id') is not None:
+        msg = like_message(db, data['message_id'])
+        await cm.broadcast(
+            {
+                "type": "reaction",
+                "from": CHAT_BOT,
+                "message_id": msg.id,
+                "reaction": msg.reaction,
                 "user": user.name,
             }
         )
@@ -137,6 +151,8 @@ async def send_last_messages(db: Session, ws: WebSocket, me: str):
             "to": msg.to,
             "text": msg.text,
             "ts": int(time.mktime(msg.created_at.timetuple()) * 1000),
+            "reaction": msg.reaction,
+            "message_id": msg.id,
         }
         if msg.file is not None:
             data["file"] = {

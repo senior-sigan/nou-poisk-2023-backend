@@ -25,5 +25,6 @@ class Message(Base):
     username = Column(String)
     to = Column(String, nullable=True)
     created_at = Column(DateTime)
+    reaction = Column(Integer, default=0)
 
     user = relationship("User", back_populates="messages")
