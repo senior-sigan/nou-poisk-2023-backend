@@ -23,10 +23,15 @@ class ConnectionManager:
         self.connections.pop(ws)
 
     async def broadcast(self, msg: Dict[str, any]):
-        msg["ts"] = now_ts()
+        if msg.get('ts') is None:
+            msg["ts"] = now_ts()
         msg["mid"] = str(uuid4())
-        for ws in self.connections:
-            await ws.send_json(msg)
+        
+        to = msg.get('to')
+        from_ = msg.get('from')
+        for ws, user in self.connections.items():
+            if to is None or user.name == to or user.name == from_:
+                await ws.send_json(msg)
 
 
 cm = ConnectionManager()

@@ -42,3 +42,7 @@
 .user-typing-icon {
   width: 32px;
 }
+
+.private-message {
+  color: green;
+}

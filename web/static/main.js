@@ -48,7 +48,11 @@ ws.onmessage = (event) => {
   } else if (data.type == "users_list" && data.from == "ChatBot") {
     handleUsersList(data);
   } else if (data.type === "message") {
-    handleChatMessage(data);
+    if (!data.to) {
+      handleChatMessage(data);
+    } else {
+      handleChatPrivateMessage(data);
+    }
   } else if (data.type === "typing") {
     activity_user(data);
   } else {
@@ -114,16 +118,7 @@ function createFileTag(file) {
   }
 }
 
-function handleChatMessage(data) {
-  const li = document.createElement("li");
-  if (data.text) {
-    li.textContent = `FROM: ${data.from} > ${data.text}`;
-  }
-  if (data.file) {
-    const file = createFileTag(data.file);
-    if (file) li.appendChild(file);
-  }
-
+function appendMessageWithScroll(li) {
   let shouldScroll = isAtBottom();
   
   messages.appendChild(li);
@@ -132,6 +127,37 @@ function handleChatMessage(data) {
     scrollDown();
   }
 }
+
+function formatTime(time) {
+  if (!time) return '';
+
+  const d =  new Date(time);
+  return d.toLocaleTimeString('ru-Ru', {hour: "numeric", minute: "numeric"});
+}
+
+function handleChatMessage(data) {
+  const li = document.createElement("li");
+  if (data.text) {
+    li.textContent = `${formatTime(data.ts)} (${data.from}): ${data.text}`;
+  }
+  if (data.file) {
+    const file = createFileTag(data.file);
+    if (file) li.appendChild(file);
+  }
+
+  appendMessageWithScroll(li);
+}
+
+function handleChatPrivateMessage(data) {
+  const li = document.createElement("li");
+  if (data.text) {
+    li.textContent = `${formatTime(data.ts)} (${data.from}:${data.to}) > ${data.text}`;
+    li.className = "private-message";
+  }
+
+  appendMessageWithScroll(li);
+}
+
 
 function activity_user(data) {
   const u = users.get(data.user);

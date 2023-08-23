@@ -2,6 +2,7 @@ from json import JSONDecodeError
 import json
 import os
 import shutil
+import time
 from typing import Dict, Tuple
 from fastapi import (
     Cookie,
@@ -81,28 +82,40 @@ def online_users(db: Session):
 def find_mentionee(txt: str) -> Tuple[str | None, str]:
     idx = txt.find(" ")
     if idx < 0:
-        return txt, None
-    return txt[:idx], txt[idx + 1 :]
+        return txt[1:], None
+    if idx < 2:
+        return None, txt
+    return txt[1:idx], txt[idx + 1 :]
 
 
 async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User):
     if data["type"] == "message":
-        txt: str = data["text"]
+        txt: str = data["text"].strip()
         if len(txt) > 512:
             print(f"Message from {user.name} too long. Ignoring...")
             return
         print(f"{user.name}> ", txt)
-        create_message(db, user.name, user_id=user.id, text=txt)
+        mention = None
+        to = None
+        if txt[0] == "@":
+            mention, txt_bot = find_mentionee(txt)
+            if mention is not None and mention not in BOTS:
+                # то есть это человек, а не бот
+                # TODO: проверить что есть такой человек
+                to = mention
+                mention = None
+                txt = txt_bot
+        create_message(db, user.name, user_id=user.id, text=txt, to=to)
         await cm.broadcast(
             {
                 "type": "message",
                 "from": user.name,
                 "text": txt,
+                "to": to,
             }
         )
-        if txt[0] == "@":
-            mention, txt = find_mentionee(txt)
-            await handle_mention(db, ws, user.name, mention, txt)
+        if mention is not None:
+            await handle_mention(db, ws, user.name, mention, txt_bot)
     elif data["type"] == "typing":
         await cm.broadcast(
             {
@@ -115,20 +128,26 @@ async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User
         print(f"[WARN] unknown message type from user {user.name}", data)
 
 
-async def send_last_messages(db: Session, ws: WebSocket):
+async def send_last_messages(db: Session, ws: WebSocket, me: str):
     last_mesages = get_last_messages(db)
     for msg in last_mesages:
         data = {
             "from": msg.username,
             "type": "message",
+            "to": msg.to,
             "text": msg.text,
+            "ts": int(time.mktime(msg.created_at.timetuple()) * 1000),
         }
         if msg.file is not None:
             data["file"] = {
                 "content_type": msg.mtype,
                 "path": msg.file,
             }
-        await ws.send_json(data)
+        if msg.to is None:
+            await ws.send_json(data)
+        else:
+            if me == msg.to or me == msg.username:
+                await ws.send_json(data)
 
 
 @app.websocket("/ws")
@@ -159,7 +178,7 @@ async def ws_endpoint(
                 "text": f"Client connected {username}",
             }
         )
-        await send_last_messages(db, ws)
+        await send_last_messages(db, ws, username)
         while True:
             try:
                 txt = await ws.receive_text()

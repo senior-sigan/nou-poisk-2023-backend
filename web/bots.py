@@ -22,7 +22,7 @@ def dice_parse(text: str | None) -> Tuple[int, int]:
     if text is None or len(text) == 0:
         return 1, 6
     parts = text.split(" ")
-    if len(parts) == 0:
+    if len(parts) == 1:
         return 1, int(parts[0])
     return int(parts[0]), int(parts[1])
 
@@ -60,4 +60,4 @@ async def weather_bot(db: Session, ws: WebSocket, username: str, text: str):
 # TODO: бот который запускает гуся
 
 
-BOTS = {"@ping": ping_bot, "@dice": dice_bot, "@weather": weather_bot}
+BOTS = {"ping": ping_bot, "dice": dice_bot, "weather": weather_bot}
