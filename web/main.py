@@ -209,7 +209,7 @@ async def ws_endpoint(
             {
                 "from": CHAT_BOT,
                 "type": "users_list",
-                "users": cm.users,
+                "users": online_users(db),
                 "text": f"Client disconnected {username}",
             }
         )
@@ -289,7 +289,7 @@ async def create_upload_files(
     content_type = file.content_type.split("/")[0]
 
     path = f"/media/{fid}"
-    create_message(db, user.name, user_id=user.id, file=path, ftype=content_type)
+    msg = create_message(db, user.name, user_id=user.id, file=path, ftype=content_type)
     await cm.broadcast(
         {
             "from": username,
@@ -298,6 +298,8 @@ async def create_upload_files(
                 "content_type": content_type,
                 "path": path,
             },
+            "message_id": msg.id,
+            "reaction": msg.reaction,
         }
     )
     return {"path": f"/media/{fid}", "content_type": content_type}

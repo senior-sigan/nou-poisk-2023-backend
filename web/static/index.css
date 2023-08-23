@@ -1,6 +1,6 @@
 body {
   font-family: monospace;
-  font-size: large; 
+  font-size: large;
 }
 
 .users-list-container {
@@ -12,7 +12,7 @@ body {
   position: fixed;
   right: 0;
   border: 5px solid darkblue;
-  overflow: scroll;
+  overflow-y: scroll;
 }
 
 .chat-input-container {
@@ -41,7 +41,7 @@ body {
   border: 5px solid darkblue;
   width: 85%;
   height: 75vh;
-  overflow: scroll;
+  overflow-y: scroll;
 }
 
 .user-typing-icon {
@@ -59,4 +59,17 @@ body {
 
 .message-box p {
   display: inline;
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+}
+
+.NOUCHAT {
+  animation: typing 3s steps(40, end);
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 1px solid black;
 }

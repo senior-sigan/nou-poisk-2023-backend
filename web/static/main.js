@@ -140,35 +140,41 @@ function formatTime(time) {
 
 function handleChatMessage(data) {
   const li = document.createElement("li");
-  li.className = 'message-box';
+  li.className = "message-box";
   const text = document.createElement("p");
   const but = document.createElement("button");
   const likeCounter = document.createElement("p");
 
   const isBot = data.from[0] === "@";
+  text.textContent = `${formatTime(data.ts)} (${data.from}): `;
 
   if (data.text) {
-    text.textContent = `${formatTime(data.ts)} (${data.from}): ${data.text}`;
-
-    if (!isBot) {
-      likesMap.set(data.message_id, likeCounter);
-      if (data.reaction > 0) {
-        likeCounter.textContent = `(${data.reaction}) `;
-      }
-      but.textContent = "👍";
-      but.addEventListener("click", (ev) => {
-        ws.send(
-          JSON.stringify({
-            type: "likes",
-            message_id: data.message_id,
-          })
-        );
-      });
-
-      li.appendChild(but);
-      li.appendChild(likeCounter);
-    }
+    text.textContent += data.text;
   }
+
+  if (!isBot) {
+    likesMap.set(data.message_id, likeCounter);
+    if (data.reaction > 0) {
+      likeCounter.textContent = `(${data.reaction}) `;
+    } else {
+      likeCounter.textContent = `( ) `;
+    }
+    but.textContent = "👍";
+    but.addEventListener("click", (ev) => {
+      ws.send(
+        JSON.stringify({
+          type: "likes",
+          message_id: data.message_id,
+        })
+      );
+    });
+
+    li.appendChild(but);
+    li.appendChild(likeCounter);
+  }
+
+  li.appendChild(text);
+
   if (data.file) {
     const file = createFileTag(data.file);
     if (file) li.appendChild(file);
@@ -176,8 +182,6 @@ function handleChatMessage(data) {
   if (isBot) {
     li.setAttribute("style", "color: #3d57ff; background: #f0f0f0;");
   }
-
-  li.appendChild(text);
 
   appendMessageWithScroll(li);
 }
@@ -258,3 +262,20 @@ function handleLike(data) {
     }
   }
 }
+
+function typeText(element, delay, index) {
+  if (index === 0) {
+    text = element.textContent;
+    element.textContent = "";
+  }
+  element.textContent += text[index];
+
+  if (index < text.length - 1) {
+    setTimeout(() => {
+      index++;
+      typeText(element, delay, index);
+    }, delay);
+  }
+}
+
+typeText(document.getElementById("NOUCHAT"), 50, 0);
