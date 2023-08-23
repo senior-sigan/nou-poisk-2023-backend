@@ -45,7 +45,8 @@ body {
 }
 
 .user-typing-icon {
-  width: 32px;
+  width: 16px;
+  display: inline;
 }
 
 .private-message {
@@ -72,4 +73,13 @@ body {
   white-space: nowrap;
   overflow: hidden;
   border-right: 1px solid black;
+}
+
+.users-list_name {
+  display: inline;
+}
+
+.message-image {
+  min-height: 128px;
+  max-height: 256px;
 }

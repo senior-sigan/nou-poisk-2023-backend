@@ -144,6 +144,7 @@ async def handle_chat_message(ws: WebSocket, db: Session, data: Dict, user: User
 
 async def send_last_messages(db: Session, ws: WebSocket, me: str):
     last_mesages = get_last_messages(db)
+    messages = []
     for msg in last_mesages:
         data = {
             "from": msg.username,
@@ -159,11 +160,15 @@ async def send_last_messages(db: Session, ws: WebSocket, me: str):
                 "content_type": msg.mtype,
                 "path": msg.file,
             }
-        if msg.to is None:
-            await ws.send_json(data)
-        else:
-            if me == msg.to or me == msg.username:
-                await ws.send_json(data)
+        if msg.to is None or me == msg.to or me == msg.username:
+            messages.append(data)
+            
+    await ws.send_json({
+        "from": CHAT_BOT,
+        "type": 'history',
+        "messages": messages,
+    })
+        
 
 
 @app.websocket("/ws")
@@ -234,6 +239,13 @@ def index(
     )
 
 
+@app.post('/logout')
+async def logout():
+    response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER) 
+    response.delete_cookie("username")
+    return response
+
+
 @app.post("/login")
 def login(
     request: Request,
@@ -242,6 +254,9 @@ def login(
     db: Session = Depends(get_db),
 ):
     username = username.strip()
+    if username[0] == '@' or len(username) > 16:
+        print('Bad username')
+        return templates.TemplateResponse("login.html", {"request": request})
     password = password.strip()
     if len(username) == 0 or len(password) == 0:
         print("Empty username or password")

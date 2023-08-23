@@ -49,15 +49,13 @@ ws.onmessage = (event) => {
   } else if (data.type == "users_list" && data.from == "ChatBot") {
     handleUsersList(data);
   } else if (data.type === "message") {
-    if (!data.to) {
-      handleChatMessage(data);
-    } else {
-      handleChatPrivateMessage(data);
-    }
+    handleChatMessage(data);
   } else if (data.type === "typing") {
     activity_user(data);
   } else if (data.type === "reaction" && data.from == "ChatBot") {
     handleLike(data);
+  } else if (data.type === "history" && data.from == "ChatBot") {
+    handleChatHistory(data.messages);
   } else {
     console.warn("Unknown message type", data);
   }
@@ -98,7 +96,7 @@ function createFileTag(file) {
   if (file.content_type === "image") {
     const img = document.createElement("img");
     img.src = file.path;
-    img.style = "width: 400px";
+    img.className = 'message-image';
     return img;
   } else if (file.content_type === "video") {
     const video = document.createElement("video");
@@ -120,13 +118,16 @@ function createFileTag(file) {
   }
 }
 
-function appendMessageWithScroll(li) {
+function appendMessagesWithScroll(blocks) {
   let shouldScroll = isAtBottom();
 
-  messages.appendChild(li);
+  for (const block of blocks) {
+    messages.appendChild(block);
+  }
 
   if (shouldScroll) {
     scrollDown();
+    setTimeout(() => scrollDown(), 200); // maybe scroll after image loaded
   }
 }
 
@@ -137,15 +138,22 @@ function formatTime(time) {
   return d.toLocaleTimeString("ru-Ru", { hour: "numeric", minute: "numeric" });
 }
 
-function handleChatMessage(data) {
-  const li = document.createElement("li");
-  li.className = "message-box";
+function createMesageBlock(data) {
+  const el = document.createElement("div");
+  el.className = "message-box";
   const text = document.createElement("p");
   const but = document.createElement("button");
   const likeCounter = document.createElement("p");
 
   const isBot = data.from[0] === "@";
-  text.textContent = `${formatTime(data.ts)} (${data.from}): `;
+
+  text.textContent = `${formatTime(data.ts)} `;
+  if (data.to) {
+    text.textContent += ` (${data.from}:${data.to}): `;
+    el.className += " private-message";
+  } else {
+    text.textContent += ` (${data.from}): `;
+  }
 
   if (data.text) {
     text.textContent += data.text;
@@ -168,33 +176,31 @@ function handleChatMessage(data) {
       );
     });
 
-    li.appendChild(but);
-    li.appendChild(likeCounter);
+    el.appendChild(but);
+    el.appendChild(likeCounter);
   }
 
-  li.appendChild(text);
+  el.appendChild(text);
 
   if (data.file) {
     const file = createFileTag(data.file);
-    if (file) li.appendChild(file);
+    if (file) el.appendChild(file);
   }
   if (isBot) {
-    li.setAttribute("style", "color: #3d57ff; background: #f0f0f0;");
+    el.setAttribute("style", "color: #3d57ff; background: #f0f0f0;");
   }
 
-  appendMessageWithScroll(li);
+  return el;
 }
 
-function handleChatPrivateMessage(data) {
-  const li = document.createElement("li");
-  if (data.text) {
-    li.textContent = `${formatTime(data.ts)} (${data.from}:${data.to}) > ${
-      data.text
-    }`;
-    li.className = "private-message";
-  }
+function handleChatHistory(messages) {
+  const blocks = messages.map((message) => createMesageBlock(message));
+  appendMessagesWithScroll(blocks);
+} 
 
-  appendMessageWithScroll(li);
+function handleChatMessage(data) {
+  const el = createMesageBlock(data);
+  appendMessagesWithScroll([el]);
 }
 
 function activity_user(data) {
@@ -215,18 +221,26 @@ function handleUsersList(data) {
   users.clear();
 
   for (const user of data.users) {
-    const li = document.createElement("li");
-    li.textContent = `${user.name}`;
-    const img = document.createElement("img");
-    img.src = "/static/pen.png";
+    const li = document.createElement("div");
+    
+    const img = document.createElement("p");
+    img.textContent = "✍️";
     img.className = "user-typing-icon";
     img.setAttribute("style", "opacity: 0%;");
+    
+    const text = document.createElement('p');
+    text.className = "users-list_name"
+    text.textContent = `${user.name}`;
+    
     li.appendChild(img);
+    li.appendChild(text);
+    
     if (user.isOnline === true) {
       li.setAttribute("style", "color: green;");
     } else {
       li.setAttribute("style", "color: red;");
     }
+
     usersList.appendChild(li);
     users.set(user.name, {
       el: img,

@@ -4,6 +4,8 @@ from fastapi import WebSocket
 from connection_manager import cm
 from crud import create_message
 from sqlalchemy.orm import Session
+import requests
+import json
 
 from list_city import DICT_CITY
 
@@ -281,13 +283,40 @@ async def city_game(db: Session, ws: WebSocket, username: str, text: str):
             }
         )
 
+async def music_bot(db: Session, ws: WebSocket, username: str, text: str):
+    base = "http://192.168.1.117:5000"
+    res = requests.get(f"{base}?name={text}")
+    data = json.loads(res.content.decode())
+    path = data.get('path')
+    if path is None:
+        await cm.broadcast(
+            {
+                "from": "MusicBot",
+                "type": "message",
+                "text": "Music not found :(",
+            }
+        )
+        return
+
+    await cm.broadcast(
+        {
+            "from": "MusicBot",
+            "type": "message",
+            "file": {
+                "content_type": "video",
+                "path": f"{base}/music/{path}",
+            },
+        }
+    )
+
 
 BOTS = {
     "ping": ping_bot,
-    "city_game": city_game,
+    # "city_game": city_game,
     "dice": dice_bot,
     "weather": weather_bot,
     "flip": flip_bot,
     "help": help_bot,
     "goose": goose_bot,
+    "music": music_bot,
 }

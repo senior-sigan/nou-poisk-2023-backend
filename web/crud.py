@@ -1,5 +1,6 @@
 # CRUD = create, read, update, delete
 from typing import Optional, List
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from models import User, Message
@@ -56,7 +57,9 @@ def create_message(
 
 
 def get_last_messages(db: Session) -> List[Message]:
-    return db.query(Message).limit(1000).all()
+    rows = db.query(Message).order_by(desc(Message.id)).limit(1000).all()
+    rows.reverse()
+    return rows
 
 
 def like_message(db: Session, message_id):
