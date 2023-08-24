@@ -51,8 +51,9 @@ def get_db():
 
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
+# host files in Caddy server
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 templates = Jinja2Templates("templates")
 
 CHAT_BOT = "ChatBot"
@@ -254,28 +255,36 @@ def login(
     db: Session = Depends(get_db),
 ):
     username = username.strip()
-    if username[0] == '@' or len(username) > 16:
-        print('Bad username')
-        return templates.TemplateResponse("login.html", {"request": request})
     password = password.strip()
+    print(f'[INFO] /login username="{username}" password="{password}"')
+
     if len(username) == 0 or len(password) == 0:
         print("Empty username or password")
         return templates.TemplateResponse("login.html", {"request": request})
+
+    if username[0] == '@' or len(username) > 16:
+        print('Bad username')
+        return templates.TemplateResponse("login.html", {"request": request})
+
     user = get_user_by_name(db, username)
-    if user is not None and verify_pwd(password, user.password):
+    
+    # либо он новый либо старый и корректный юзер
+    if user is None:
+        user = create_user(db, username, password)
+        print("CREATED USER ", user.id, user.name, user.created_at)
+        response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)    
+        response.set_cookie("username", user.name)
+        return response
+
+    if not verify_pwd(password, user.password):
         print("FAILED: ", user.id, user.name, user.created_at)
         print(f"Password is wrong for user {username}")
         # TODO: пароль или имя неправильные
         return templates.TemplateResponse("login.html", {"request": request})
 
-    # либо он новый либо старый и корректный юзер
-    if user is None:
-        user = create_user(db, username, password)
-        print("CREATED USER ", user.id, user.name, user.created_at)
-
     response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     # TODO: в куках надо хранить session_id а не юзернейм, но так проще пока что, хоть и небезопасно
-    response.set_cookie("username", username)
+    response.set_cookie("username", user.name)
     return response
 
 

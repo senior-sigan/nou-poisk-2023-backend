@@ -57,7 +57,7 @@ def create_message(
 
 
 def get_last_messages(db: Session) -> List[Message]:
-    rows = db.query(Message).order_by(desc(Message.id)).limit(1000).all()
+    rows = db.query(Message).order_by(desc(Message.id)).limit(1500).all()
     rows.reverse()
     return rows
 
