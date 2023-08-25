@@ -283,11 +283,12 @@ async def city_game(db: Session, ws: WebSocket, username: str, text: str):
             }
         )
 
+
 async def music_bot(db: Session, ws: WebSocket, username: str, text: str):
     base = "http://192.168.1.105:5000"
     res = requests.get(f"{base}?name={text}")
     data = json.loads(res.content.decode())
-    path = data.get('path')
+    path = data.get("path")
     if path is None:
         await cm.broadcast(
             {

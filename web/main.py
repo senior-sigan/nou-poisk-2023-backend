@@ -163,13 +163,14 @@ async def send_last_messages(db: Session, ws: WebSocket, me: str):
             }
         if msg.to is None or me == msg.to or me == msg.username:
             messages.append(data)
-            
-    await ws.send_json({
-        "from": CHAT_BOT,
-        "type": 'history',
-        "messages": messages,
-    })
-        
+
+    await ws.send_json(
+        {
+            "from": CHAT_BOT,
+            "type": "history",
+            "messages": messages,
+        }
+    )
 
 
 @app.websocket("/ws")
@@ -240,11 +241,20 @@ def index(
     )
 
 
-@app.post('/logout')
+@app.post("/logout")
 async def logout():
-    response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER) 
+    response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("username")
     return response
+
+
+def authenticate_or_create_user(db: Session, username: str, password: str):
+    user = get_user_by_name(db, username)
+    if user is None:
+        return create_user(db, username, password)
+    if verify_pwd(password, user.password):
+        return user
+    return None
 
 
 @app.post("/login")
@@ -262,29 +272,17 @@ def login(
         print("Empty username or password")
         return templates.TemplateResponse("login.html", {"request": request})
 
-    if username[0] == '@' or len(username) > 16:
-        print('Bad username')
+    if username[0] == "@" or len(username) > 16:
+        print("Bad username")
         return templates.TemplateResponse("login.html", {"request": request})
 
-    user = get_user_by_name(db, username)
-    
-    # либо он новый либо старый и корректный юзер
-    if user is None:
-        user = create_user(db, username, password)
-        print("CREATED USER ", user.id, user.name, user.created_at)
-        response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)    
+    user = authenticate_or_create_user(db, username, password)
+    if user is not None:
+        response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
         response.set_cookie("username", user.name)
-        return response
+    else:
+        response = templates.TemplateResponse("login.html", {"request": request})
 
-    if not verify_pwd(password, user.password):
-        print("FAILED: ", user.id, user.name, user.created_at)
-        print(f"Password is wrong for user {username}")
-        # TODO: пароль или имя неправильные
-        return templates.TemplateResponse("login.html", {"request": request})
-
-    response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
-    # TODO: в куках надо хранить session_id а не юзернейм, но так проще пока что, хоть и небезопасно
-    response.set_cookie("username", user.name)
     return response
 
 
