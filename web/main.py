@@ -51,9 +51,10 @@ def get_db():
 
 
 app = FastAPI()
-# host files in Caddy server
-# app.mount("/static", StaticFiles(directory="static"), name="static")
-# app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
+# Лучше использовать Caddy или Nginx, чтобы они раздавали эти файлы
+# Например, Caddy умеет раздавать mp4, mp3 видео так, чтобы работало перематывание
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 templates = Jinja2Templates("templates")
 
 CHAT_BOT = "ChatBot"
